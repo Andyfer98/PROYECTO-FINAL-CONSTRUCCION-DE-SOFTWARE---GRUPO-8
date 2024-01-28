@@ -1,0 +1,219 @@
+CREATE DATABASE DB_EleccionAutoridades
+
+USE DB_EleccionAutoridades
+
+CREATE TABLE semestres(
+	id		INT		IDENTITY(1,1)		PRIMARY KEY,
+	nivel	VARCHAR(255) NOT NULL,
+)
+
+INSERT INTO semestres(nivel) VALUES
+('Primer Semestre'),
+('Segundo Semestre'),
+('Tercer Semestre'),
+('Cuarto Semestre'),
+('Quinto Semestre'),
+('Sexto Semestre'),
+('Septimo Semestre'),
+('Octavo Semestre'),
+('Noveno Semestre'),
+('Decimo Semestre');
+
+CREATE TABLE estudiantes (
+	id						INT		IDENTITY(1,1)		PRIMARY KEY,
+	nombresCompletos		VARCHAR(255)	NOT NULL,
+	semestreId				INT				NOT NULL,
+	correoInstitucional		VARCHAR(255)	NOT NULL,
+	usuario					VARCHAR(255)	NOT NULL,
+	clave					VARCHAR(255)	NOT NULL,
+	FOREIGN KEY (semestreId) REFERENCES Semestres(id)
+)
+
+CREATE TABLE candidatos (
+	id						INT		IDENTITY(1,1)		PRIMARY KEY,
+	nombresCompletos		VARCHAR(255)	NOT NULL,
+	nombreImagen			VARCHAR(255)	NOT NULL,
+	Titulo					VARCHAR(255)	NOT NULL,
+	AcercaDeMi				VARCHAR(255)	NOT NULL,
+	Propuesta				VARCHAR(255)	NOT NULL
+)
+
+CREATE TABLE votaciones (
+	id						INT		IDENTITY(1,1)		PRIMARY KEY,
+	estudianteId			INT		NOT NULL,
+	candidatoId				INT		NOT NULL,
+	FOREIGN KEY (estudianteId) REFERENCES estudiantes(id),
+	FOREIGN KEY (candidatoId) REFERENCES candidatos(id)
+)
+
+
+
+
+CREATE PROCEDURE spRealizarConsulta
+    @tipoConsulta VARCHAR(50),
+	@parametro	VARCHAR(255) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF @tipoConsulta = 'consultar_semestres'
+		BEGIN        
+			SELECT * from semestres;
+		END
+		 
+	IF @tipoConsulta = 'consultar_candidatas'
+		BEGIN        
+			SELECT * from candidatos;
+		END
+
+	IF @tipoConsulta = 'verificar_usuario_estudiante'
+		BEGIN
+			SELECT COUNT(*) FROM estudiantes WHERE usuario = @parametro;
+		END		
+
+	IF @tipoConsulta = 'verificar_nombre_imagen'
+		BEGIN
+			SELECT COUNT(*) FROM candidatos WHERE nombreImagen = @parametro;
+		END	
+
+END;
+
+
+
+
+
+CREATE PROCEDURE spVerificarCredenciales
+    @usuario VARCHAR(255),
+    @clave VARCHAR(255)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @idEstudiante INT;
+
+    SELECT @idEstudiante = id FROM estudiantes WHERE usuario = @usuario AND clave = @clave;
+
+    IF @idEstudiante IS NULL
+        SELECT 0 AS Resultado;
+    ELSE
+        SELECT @idEstudiante AS Resultado;
+END;
+
+CREATE PROCEDURE spInsertarEstudiante
+    @nombresCompletos		VARCHAR(255),
+    @semestreId				INT,
+    @correoInstitucional	VARCHAR(255),
+    @usuario				VARCHAR(255),
+    @clave					VARCHAR(255),
+    @resultado				INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @resultado = 0;
+
+    BEGIN TRY
+        INSERT INTO estudiantes(nombresCompletos, semestreId, correoInstitucional, usuario, clave)
+        VALUES (@nombresCompletos, @semestreId, @correoInstitucional, @usuario, @clave);
+
+        SET @resultado = 1;
+    END TRY
+    BEGIN CATCH
+		PRINT ERROR_MESSAGE();
+        SET @resultado = 0;
+    END CATCH
+END;
+
+
+
+
+
+CREATE PROCEDURE spInsertarCandidato
+    @nombresCompletos		VARCHAR(255),
+    @nombreImagen			VARCHAR(255),
+    @Titulo					VARCHAR(255),   
+	@AcercaDeMi				VARCHAR(255),
+    @Propuesta				VARCHAR(255),
+    @resultado				INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @resultado = 0;
+
+    BEGIN TRY
+        INSERT INTO candidatos(nombresCompletos, nombreImagen, Titulo, AcercaDeMi, Propuesta)
+        VALUES (@nombresCompletos, @nombreImagen, @Titulo, @AcercaDeMi, @Propuesta);
+
+        SET @resultado = 1;
+    END TRY
+    BEGIN CATCH
+		PRINT ERROR_MESSAGE();
+        SET @resultado = 0;
+    END CATCH
+END;
+
+
+
+
+
+
+CREATE PROCEDURE spInsertarVotacion
+    @estudianteId			INT,
+    @candidatoId			INT,
+    @resultado				INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @resultado = 0;
+
+    BEGIN TRY
+        INSERT INTO votaciones(estudianteId, candidatoId)
+        VALUES (@estudianteId, @candidatoId);
+
+        SET @resultado = 1;
+    END TRY
+    BEGIN CATCH
+		PRINT ERROR_MESSAGE();
+        SET @resultado = 0;
+    END CATCH
+END;
+
+
+
+
+
+
+CREATE PROCEDURE spObtenerCandidatosMasVotados
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @ResultadoString NVARCHAR(MAX);
+
+    WITH CandidatosVotos AS (
+        SELECT
+            c.nombresCompletos,
+            COUNT(v.id) AS cantidadVotos,
+            ROW_NUMBER() OVER (ORDER BY COUNT(v.id) DESC) AS Ranking
+        FROM
+            candidatos c
+        LEFT JOIN
+            votaciones v ON c.id = v.candidatoId
+        GROUP BY
+            c.nombresCompletos
+    )
+    SELECT
+        @ResultadoString = 
+            'President@: ' + ISNULL(MAX(CASE WHEN Ranking = 1 THEN nombresCompletos END), 'N/A') +
+            ' con ' + ISNULL(MAX(CASE WHEN Ranking = 1 THEN CAST(cantidadVotos AS NVARCHAR(10)) END), '0') + ' votos, ' +
+            'Vicepresident@: ' + ISNULL(MAX(CASE WHEN Ranking = 2 THEN nombresCompletos END), 'N/A') +
+            ' con ' + ISNULL(MAX(CASE WHEN Ranking = 2 THEN CAST(cantidadVotos AS NVARCHAR(10)) END), '0') + ' votos, ' +
+            'Secretari@: ' + ISNULL(MAX(CASE WHEN Ranking = 3 THEN nombresCompletos END), 'N/A') +
+            ' con ' + ISNULL(MAX(CASE WHEN Ranking = 3 THEN CAST(cantidadVotos AS NVARCHAR(10)) END), '0') + ' votos.'
+    FROM
+        CandidatosVotos;
+
+    SELECT @ResultadoString AS Resultado;
+END;

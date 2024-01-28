@@ -1,0 +1,6 @@
+C:\Users\VILLAMAR\Desktop\Sistema Elección Autoridades\Capa_Entidades\bin\Debug\Capa_Entidades.dll
+C:\Users\VILLAMAR\Desktop\Sistema Elección Autoridades\Capa_Entidades\bin\Debug\Capa_Entidades.pdb
+C:\Users\VILLAMAR\Desktop\Sistema Elección Autoridades\Capa_Entidades\obj\Debug\Capa_Entidades.csproj.AssemblyReference.cache
+C:\Users\VILLAMAR\Desktop\Sistema Elección Autoridades\Capa_Entidades\obj\Debug\Capa_Entidades.csproj.CoreCompileInputs.cache
+C:\Users\VILLAMAR\Desktop\Sistema Elección Autoridades\Capa_Entidades\obj\Debug\Capa_Entidades.dll
+C:\Users\VILLAMAR\Desktop\Sistema Elección Autoridades\Capa_Entidades\obj\Debug\Capa_Entidades.pdb
